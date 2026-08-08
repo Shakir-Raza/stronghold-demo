@@ -1354,6 +1354,48 @@ function ReportsModule({ c }) {
   const topReceivables = [...customers].sort((a, b) => b.outstanding - a.outstanding).slice(0, 6).map(p => ({ name: p.name.length > 18 ? p.name.slice(0, 16) + "…" : p.name, amount: p.outstanding }));
   const topPayables = [...vendors].sort((a, b) => b.outstanding - a.outstanding).slice(0, 5).map(p => ({ name: p.name.length > 18 ? p.name.slice(0, 16) + "…" : p.name, amount: p.outstanding }));
   const pieColors = { primary: c.primary, success: c.success, danger: c.danger, accent: c.accent };
+
+  function downloadReport() {
+    const rows = [
+      ["Stronghold Pakistan — Financial Report"],
+      ["Generated", new Date().toISOString().slice(0, 10)],
+      ["Period", period.toUpperCase()],
+      [],
+      ["Metric", "Value (Rs Cr)"],
+      ["Total Credit Exposure", totalCredit.toFixed(2)],
+      ["Total Debit / Paid", totalDebit.toFixed(2)],
+      ["Outstanding Receivables", totalReceivables.toFixed(2)],
+      ["Outstanding Payables", totalPayables.toFixed(2)],
+      ["Loan Principal", loanPrincipal.toFixed(2)],
+      ["Loan Remaining", loanRemaining.toFixed(2)],
+      ["Asset Book Value", assetValue.toFixed(2)],
+      ["Active Customers", String(customers.filter(x => x.status === "Active").length)],
+      [],
+      ["Top Receivables"],
+      ["Customer", "Outstanding (Rs Cr)"],
+      ...topReceivables.map(r => [r.name, r.amount.toFixed(2)]),
+      [],
+      ["Top Payables"],
+      ["Vendor", "Outstanding (Rs Cr)"],
+      ...topPayables.map(r => [r.name, r.amount.toFixed(2)]),
+      [],
+      ["Loan Status"],
+      ["Status", "Count"],
+      ...loanByStatus.map(r => [r.name, String(r.value)]),
+    ];
+    const csv = rows.map(r => r.map(cell => {
+      const s = String(cell ?? "");
+      return s.includes(",") || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `stronghold-report-${period}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
@@ -1361,11 +1403,20 @@ function ReportsModule({ c }) {
           <div className="sh-display text-lg font-semibold" style={{ color: c.text }}>Reports</div>
           <div className="text-xs sh-body mt-0.5" style={{ color: c.textMuted }}>Derived from live module data · As of 8 August 2026</div>
         </div>
-        <div className="flex items-center gap-1.5">
-          {["ytd", "q2", "q3", "all"].map(p => (
-            <button key={p} onClick={() => setPeriod(p)} className="text-xs sh-body px-2.5 py-1.5 rounded-lg uppercase"
-              style={{ background: period === p ? c.primarySoft : "transparent", color: period === p ? c.primary : c.textMuted, border: `1px solid ${period === p ? c.primarySoft : c.border}` }}>{p}</button>
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            {["ytd", "q2", "q3", "all"].map(p => (
+              <button key={p} onClick={() => setPeriod(p)} className="text-xs sh-body px-2.5 py-1.5 rounded-lg uppercase"
+                style={{ background: period === p ? c.primarySoft : "transparent", color: period === p ? c.primary : c.textMuted, border: `1px solid ${period === p ? c.primarySoft : c.border}` }}>{p}</button>
+            ))}
+          </div>
+          <button
+            onClick={downloadReport}
+            className="flex items-center gap-1.5 text-xs sh-body font-medium px-3 py-1.5 rounded-lg"
+            style={{ background: c.primary, color: "#fff" }}
+          >
+            Download CSV
+          </button>
         </div>
       </div>
       <div className="grid grid-cols-4 gap-4">
@@ -1532,8 +1583,8 @@ export default function StrongholdDemo() {
 
   return (
     <div
-      className="sh-body w-full min-h-[820px] flex overflow-hidden rounded-2xl"
-      style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}` }}
+      className="sh-body w-full h-screen flex overflow-hidden"
+      style={{ background: c.bg, color: c.text }}
     >
       {fonts}
 
