@@ -1355,31 +1355,68 @@ function ReportsModule({ c }) {
   const topPayables = [...vendors].sort((a, b) => b.outstanding - a.outstanding).slice(0, 5).map(p => ({ name: p.name.length > 18 ? p.name.slice(0, 16) + "…" : p.name, amount: p.outstanding }));
   const pieColors = { primary: c.primary, success: c.success, danger: c.danger, accent: c.accent };
 
+  // Period scopes for monthly activity (calendar 2026 demo data)
+  const periodMeta = {
+    ytd: { label: "Year to Date 2026", months: ["Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"], factor: 1 },
+    q2:  { label: "Q2 2026 (Apr–Jun)", months: ["Apr", "May", "Jun"], factor: 0.42 },
+    q3:  { label: "Q3 2026 (Jul–Sep)", months: ["Jul", "Aug"], factor: 0.35 },
+    all: { label: "Full Year / All periods", months: ["Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"], factor: 1 },
+  };
+  const meta = periodMeta[period] || periodMeta.ytd;
+  const periodActivity = monthlyActivity.filter(m => meta.months.includes(m.month));
+  const periodCredit = periodActivity.reduce((s, m) => s + m.credit, 0);
+  const periodDebit = periodActivity.reduce((s, m) => s + m.debit, 0);
+  // Scale balance-sheet style totals for quarter views (demo approximation)
+  const f = meta.factor;
+  const reportCredit = +(totalCredit * f).toFixed(2);
+  const reportDebit = +(totalDebit * f).toFixed(2);
+  const reportReceivables = +(totalReceivables * f).toFixed(2);
+  const reportPayables = +(totalPayables * f).toFixed(2);
+  const reportLoanPrincipal = period === "all" || period === "ytd" ? loanPrincipal : +(loanPrincipal * f).toFixed(2);
+  const reportLoanRemaining = period === "all" || period === "ytd" ? loanRemaining : +(loanRemaining * f).toFixed(2);
+  const reportAssets = period === "all" || period === "ytd" ? assetValue : +(assetValue * f).toFixed(2);
+
   function downloadReport() {
+    const periodTitle = {
+      ytd: "Yearly Report — Year to Date 2026",
+      q2: "Quarterly Report — Q2 2026 (Apr–Jun)",
+      q3: "Quarterly Report — Q3 2026 (Jul–Sep)",
+      all: "Full Period Report — All available data",
+    }[period] || "Financial Report";
+
     const rows = [
-      ["Stronghold Pakistan — Financial Report"],
+      ["Stronghold Pakistan"],
+      [periodTitle],
       ["Generated", new Date().toISOString().slice(0, 10)],
-      ["Period", period.toUpperCase()],
+      ["Period code", period.toUpperCase()],
+      ["Period label", meta.label],
       [],
-      ["Metric", "Value (Rs Cr)"],
-      ["Total Credit Exposure", totalCredit.toFixed(2)],
-      ["Total Debit / Paid", totalDebit.toFixed(2)],
-      ["Outstanding Receivables", totalReceivables.toFixed(2)],
-      ["Outstanding Payables", totalPayables.toFixed(2)],
-      ["Loan Principal", loanPrincipal.toFixed(2)],
-      ["Loan Remaining", loanRemaining.toFixed(2)],
-      ["Asset Book Value", assetValue.toFixed(2)],
+      ["SUMMARY (Rs Cr)"],
+      ["Metric", "Value"],
+      ["Credit (period activity)", periodCredit.toFixed(2)],
+      ["Debit (period activity)", periodDebit.toFixed(2)],
+      ["Total Credit Exposure", reportCredit.toFixed(2)],
+      ["Total Debit / Paid", reportDebit.toFixed(2)],
+      ["Outstanding Receivables", reportReceivables.toFixed(2)],
+      ["Outstanding Payables", reportPayables.toFixed(2)],
+      ["Loan Principal", reportLoanPrincipal.toFixed(2)],
+      ["Loan Remaining", reportLoanRemaining.toFixed(2)],
+      ["Asset Book Value", reportAssets.toFixed(2)],
       ["Active Customers", String(customers.filter(x => x.status === "Active").length)],
       [],
-      ["Top Receivables"],
+      ["MONTHLY ACTIVITY (period)"],
+      ["Month", "Credit (Rs Cr)", "Debit (Rs Cr)"],
+      ...periodActivity.map(m => [m.month, String(m.credit), String(m.debit)]),
+      [],
+      ["TOP RECEIVABLES"],
       ["Customer", "Outstanding (Rs Cr)"],
       ...topReceivables.map(r => [r.name, r.amount.toFixed(2)]),
       [],
-      ["Top Payables"],
+      ["TOP PAYABLES"],
       ["Vendor", "Outstanding (Rs Cr)"],
       ...topPayables.map(r => [r.name, r.amount.toFixed(2)]),
       [],
-      ["Loan Status"],
+      ["LOAN STATUS"],
       ["Status", "Count"],
       ...loanByStatus.map(r => [r.name, String(r.value)]),
     ];
@@ -1391,7 +1428,8 @@ function ReportsModule({ c }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `stronghold-report-${period}-${new Date().toISOString().slice(0, 10)}.csv`;
+    const slug = { ytd: "yearly-ytd", q2: "quarterly-q2", q3: "quarterly-q3", all: "full-period" }[period] || period;
+    a.download = `stronghold-${slug}-report-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -1419,14 +1457,15 @@ function ReportsModule({ c }) {
           </button>
         </div>
       </div>
+      <div className="text-xs sh-body px-1" style={{ color: c.textMuted }}>{meta.label}</div>
       <div className="grid grid-cols-4 gap-4">
-        <StatCard c={c} icon={TrendingUp} label="Total Credit Exposure" value={fmtCr(totalCredit)} accentKey="success" />
-        <StatCard c={c} icon={TrendingDown} label="Total Debit / Paid" value={fmtCr(totalDebit)} accentKey="danger" />
-        <StatCard c={c} icon={ArrowUpRight} label="Receivables" value={fmtCr(totalReceivables)} accentKey="accent" />
-        <StatCard c={c} icon={ArrowDownRight} label="Payables" value={fmtCr(totalPayables)} accentKey="danger" />
-        <StatCard c={c} icon={Landmark} label="Loan Principal" value={fmtCr(loanPrincipal)} accentKey="primary" />
-        <StatCard c={c} icon={Wallet} label="Loan Remaining" value={fmtCr(loanRemaining)} accentKey="accent" />
-        <StatCard c={c} icon={Boxes} label="Asset Book Value" value={fmtCr(assetValue)} accentKey="primary" />
+        <StatCard c={c} icon={TrendingUp} label="Credit (period)" value={fmtCr(periodCredit)} accentKey="success" />
+        <StatCard c={c} icon={TrendingDown} label="Debit (period)" value={fmtCr(periodDebit)} accentKey="danger" />
+        <StatCard c={c} icon={ArrowUpRight} label="Receivables" value={fmtCr(reportReceivables)} accentKey="accent" />
+        <StatCard c={c} icon={ArrowDownRight} label="Payables" value={fmtCr(reportPayables)} accentKey="danger" />
+        <StatCard c={c} icon={Landmark} label="Loan Principal" value={fmtCr(reportLoanPrincipal)} accentKey="primary" />
+        <StatCard c={c} icon={Wallet} label="Loan Remaining" value={fmtCr(reportLoanRemaining)} accentKey="accent" />
+        <StatCard c={c} icon={Boxes} label="Asset Book Value" value={fmtCr(reportAssets)} accentKey="primary" />
         <StatCard c={c} icon={Users} label="Active Customers" value={customers.filter(x => x.status === "Active").length} accentKey="success" />
       </div>
       <div className="grid grid-cols-3 gap-4">
@@ -1474,9 +1513,9 @@ function ReportsModule({ c }) {
             </BarChart>
           </ResponsiveContainer>
         </SectionCard>
-        <SectionCard c={c} title="Credit vs Debit Trend">
+        <SectionCard c={c} title="Credit vs Debit Trend" subtitle={meta.label}>
           <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={monthlyActivity}>
+            <AreaChart data={periodActivity}>
               <defs>
                 <linearGradient id="rCredit" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={c.primary} stopOpacity={0.35} /><stop offset="100%" stopColor={c.primary} stopOpacity={0} />
