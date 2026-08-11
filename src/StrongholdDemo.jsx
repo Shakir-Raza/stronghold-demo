@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
 import {
   LayoutDashboard, Users, Truck, ArrowLeftRight, Landmark, Boxes,
-  Table2, FileText, BarChart3, Settings, Search, Sun, Moon,
+  Table2, FileText, BarChart3, Search, Sun, Moon,
   TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight,
   Building2, ChevronRight, Bell, CircleDot, Plus, Filter, ArrowLeft,
   Phone, Mail, MapPin, User, Pencil, Clock, ReceiptText,
-  CheckCircle2, AlertTriangle, Hourglass, PackageSearch
+  CheckCircle2, AlertTriangle, Hourglass, PackageSearch,
+  BookOpen, Scale, Shield, Download, LogOut, ClipboardList
 } from "lucide-react";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -73,16 +74,29 @@ const fonts = (
 // Nav structure
 // ---------------------------------------------------------------------------
 const NAV = [
-  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, phase: 1 },
-  { key: "customers", label: "Customers", icon: Users, phase: 1 },
-  { key: "vendors", label: "Vendors", icon: Truck, phase: 1 },
-  { key: "transactions", label: "Transactions", icon: ArrowLeftRight, phase: 1 },
-  { key: "loans", label: "Loans", icon: Landmark, phase: 1 },
-  { key: "assets", label: "Assets", icon: Boxes, phase: 1 },
-  { key: "spreadsheet", label: "Spreadsheet", icon: Table2, phase: 1 },
-  { key: "documents", label: "Documents", icon: FileText, phase: 1 },
-  { key: "reports", label: "Reports", icon: BarChart3, phase: 1 },
-  { key: "settings", label: "Settings", icon: Settings, phase: 1 },
+  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, section: "Overview", roles: ["Admin", "Employee"] },
+  { key: "customers", label: "Customers", icon: Users, section: "Parties", roles: ["Admin", "Employee"] },
+  { key: "vendors", label: "Vendors", icon: Truck, section: "Parties", roles: ["Admin", "Employee"] },
+  { key: "transactions", label: "Transactions", icon: ArrowLeftRight, section: "Money", roles: ["Admin", "Employee"] },
+  { key: "invoices", label: "Invoices", icon: ReceiptText, section: "Money", roles: ["Admin", "Employee"] },
+  { key: "loans", label: "Loans", icon: Landmark, section: "Money", roles: ["Admin", "Employee"] },
+  { key: "ledger", label: "Ledgers", icon: BookOpen, section: "Accounting", roles: ["Admin"] },
+  { key: "trial", label: "Trial Balance", icon: Scale, section: "Accounting", roles: ["Admin"] },
+  { key: "assets", label: "Assets", icon: Boxes, section: "Operations", roles: ["Admin", "Employee"] },
+  { key: "spreadsheet", label: "Spreadsheet", icon: Table2, section: "Operations", roles: ["Admin", "Employee"] },
+  { key: "documents", label: "Documents", icon: FileText, section: "Operations", roles: ["Admin", "Employee"] },
+  { key: "reports", label: "Reports", icon: BarChart3, section: "Reports & Admin", roles: ["Admin"] },
+  { key: "admin", label: "Admin", icon: Shield, section: "Reports & Admin", roles: ["Admin"] },
+];
+
+const NAV_SECTIONS = ["Overview", "Parties", "Money", "Accounting", "Operations", "Reports & Admin"];
+
+// ---------------------------------------------------------------------------
+// Demo accounts — two roles to demonstrate access control
+// ---------------------------------------------------------------------------
+const DEMO_USERS = [
+  { user: "admin", pass: "stronghold", role: "Admin", name: "S. Raza", title: "Director" },
+  { user: "employee", pass: "stronghold", role: "Employee", name: "A. Khan", title: "Site Accounts" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -123,7 +137,9 @@ const recentActivity = [
 ];
 
 function fmtCr(v) {
-  return `Rs ${v.toFixed(2)} Cr`;
+  const n = Number(v);
+  if (v == null || v === "" || Number.isNaN(n)) return "—";
+  return `Rs ${n.toFixed(2)} Cr`;
 }
 
 // ---------------------------------------------------------------------------
@@ -197,7 +213,7 @@ function buildActivity(cust, txns) {
   txns.forEach(t => {
     events.push({
       date: t.date,
-      text: t.type === "credit" ? `Invoice raised — Rs ${t.amount} Cr` : `Payment received — Rs ${t.amount} Cr`,
+      text: t.type === "credit" ? `Invoice raised — Rs ${t.amount}` : `Payment received — Rs ${t.amount}`,
     });
   });
   if (cust.activeLoans > 0) {
@@ -271,8 +287,37 @@ const documents = [
   { id: "DOC-408", title: "Equipment Hire Invoice — Generator 100kVA", type: "Invoice", party: "Internal", project: "Site power — multiple", date: "01 Aug 2026", status: "Draft", amount: 0.85 },
 ];
 
+
+// Invoices — seed (progress billings / tax invoices)
+const invoices = [
+  { id: "INV-2401", number: "SH/2026/001", party: "NESPAK", partyId: "C-1001", project: "Sukkur Barrage Rehabilitation", date: "14 Mar 2026", dueDate: "13 Apr 2026", amount: 149.72, paid: 79.8, status: "Partial", type: "Progress Billing" },
+  { id: "INV-2402", number: "SH/2026/002", party: "Descon Engineering", partyId: "C-1002", project: "Lyari Expressway — Girder Launching", date: "08 Feb 2026", dueDate: "10 Mar 2026", amount: 161.12, paid: 120.6, status: "Partial", type: "Progress Billing" },
+  { id: "INV-2403", number: "SH/2026/003", party: "FWO — Frontier Works Organization", partyId: "C-1003", project: "Zero Point Interchange — PT Works", date: "22 Mar 2026", dueDate: "21 Apr 2026", amount: 121.22, paid: 121.22, status: "Paid", type: "Progress Billing" },
+  { id: "INV-2404", number: "SH/2026/004", party: "Habib Construction Services", partyId: "C-1004", project: "Karachi Metrobus — Green Line Elevated Section", date: "03 Feb 2026", dueDate: "05 Mar 2026", amount: 91.2, paid: 63.9, status: "Partial", type: "Progress Billing" },
+  { id: "INV-2405", number: "SH/2026/005", party: "NHA — National Highway Authority", partyId: "C-1005", project: "Multan–Sukkur Motorway Bridge Works", date: "14 Mar 2026", dueDate: "13 Apr 2026", amount: 99.94, paid: 99.94, status: "Paid", type: "Progress Billing" },
+  { id: "INV-2406", number: "SH/2026/006", party: "NESPAK", partyId: "C-1001", project: "Sukkur Barrage Rehabilitation", date: "19 Jun 2026", dueDate: "19 Jul 2026", amount: 244.28, paid: 0, status: "Open", type: "Progress Billing" },
+  { id: "INV-2407", number: "SH/2026/007", party: "CSCEC Pakistan", partyId: "C-1006", project: "Karakoram Highway Phase II — Bridge Stressing", date: "21 Apr 2026", dueDate: "21 May 2026", amount: 69.92, paid: 54.45, status: "Partial", type: "Progress Billing" },
+  { id: "INV-2408", number: "SH/2026/008", party: "Descon Engineering", partyId: "C-1002", project: "Lyari Expressway — Girder Launching", date: "11 Jun 2026", dueDate: "11 Jul 2026", amount: 262.88, paid: 147.4, status: "Partial", type: "Progress Billing" },
+  { id: "INV-2409", number: "SH/2026/009", party: "NLC — National Logistics Cell", partyId: "C-1014", project: "Gwadar Port Access Road — Bridge Works", date: "21 Apr 2026", dueDate: "21 May 2026", amount: 33.82, paid: 26.1, status: "Partial", type: "Progress Billing" },
+  { id: "INV-2410", number: "SH/2026/010", party: "Punjab Metro Bus Authority", partyId: "C-1009", project: "Multan Metro — Elevated Corridor", date: "02 May 2026", dueDate: "01 Jun 2026", amount: 57.0, paid: 57.0, status: "Paid", type: "Final Billing" },
+];
+
+// Chart of accounts (simplified for demo GL / trial balance)
+const chartOfAccounts = [
+  { code: "1100", name: "Cash & Bank", type: "Asset" },
+  { code: "1200", name: "Accounts Receivable", type: "Asset" },
+  { code: "1500", name: "Plant & Equipment", type: "Asset" },
+  { code: "2100", name: "Accounts Payable", type: "Liability" },
+  { code: "2200", name: "Loans Payable", type: "Liability" },
+  { code: "3100", name: "Owner Equity", type: "Equity" },
+  { code: "4100", name: "Contract Revenue", type: "Income" },
+  { code: "5100", name: "Material Cost", type: "Expense" },
+  { code: "5200", name: "Labour & Site Cost", type: "Expense" },
+  { code: "5300", name: "Equipment & Hire", type: "Expense" },
+];
+
 const spreadsheetSeed = [
-  ["Item", "Unit", "Qty", "Rate (Rs)", "Amount (Rs Cr)", "Project"],
+  ["Item", "Unit", "Qty", "Rate (Rs)", "Amount (Rs)", "Project"],
   ["PC Strand 15.7mm", "tonne", "42", "0.42", "17.64", "Sukkur Barrage"],
   ["PC Strand 12.7mm", "tonne", "28", "0.38", "10.64", "Metrobus Green Line"],
   ["Multi-strand Anchorage", "set", "120", "0.048", "5.76", "Sukkur Barrage"],
@@ -346,7 +391,7 @@ function SectionCard({ c, title, subtitle, right, children }) {
 // ---------------------------------------------------------------------------
 // Party profile (shared by Customers and Vendors)
 // ---------------------------------------------------------------------------
-function PartyProfile({ c, party, kind, onBack }) {
+function PartyProfile({ c, party, kind, onBack, canEdit }) {
   const { rows: txns, creditTotal } = useMemo(() => buildTransactions(party), [party]);
   const activity = useMemo(() => buildActivity(party, txns), [party, txns]);
   const active = party.status === "Active";
@@ -385,12 +430,18 @@ function PartyProfile({ c, party, kind, onBack }) {
             </div>
           </div>
         </div>
-        <button
-          className="flex items-center gap-1.5 text-xs sh-body px-3 py-1.5 rounded-lg"
-          style={{ background: c.surface, border: `1px solid ${c.border}`, color: c.text }}
-        >
-          <Pencil size={13} /> Edit
-        </button>
+        {canEdit ? (
+          <button
+            className="flex items-center gap-1.5 text-xs sh-body px-3 py-1.5 rounded-lg"
+            style={{ background: c.surface, border: `1px solid ${c.border}`, color: c.text }}
+          >
+            <Pencil size={13} /> Edit
+          </button>
+        ) : (
+          <div className="text-[10.5px] sh-body px-3 py-1.5 rounded-lg" style={{ background: c.surfaceAlt, color: c.textFaint, border: `1px solid ${c.border}` }}>
+            View only — Admin can edit
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-4 gap-4">
@@ -460,8 +511,8 @@ function PartyProfile({ c, party, kind, onBack }) {
                       </span>
                     </td>
                     <td className="py-2.5" style={{ color: c.text }}>{t.description}</td>
-                    <td className="py-2.5 text-right sh-mono" style={{ color: c.text }}>Rs {t.amount} Cr</td>
-                    <td className="py-2.5 text-right sh-mono font-medium" style={{ color: c.text }}>Rs {t.balance} Cr</td>
+                    <td className="py-2.5 text-right sh-mono" style={{ color: c.text }}>{fmtCr(t.amount)}</td>
+                    <td className="py-2.5 text-right sh-mono font-medium" style={{ color: c.text }}>{fmtCr(t.balance)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -493,7 +544,7 @@ function PartyProfile({ c, party, kind, onBack }) {
 // ---------------------------------------------------------------------------
 // Party list module (shared by Customers and Vendors)
 // ---------------------------------------------------------------------------
-function PartyListModule({ c, kind, data }) {
+function PartyListModule({ c, kind, data, canEdit }) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selected, setSelected] = useState(null);
@@ -501,7 +552,7 @@ function PartyListModule({ c, kind, data }) {
   const label = isVendor ? "Vendor" : "Customer";
 
   if (selected) {
-    return <PartyProfile c={c} party={selected} kind={kind} onBack={() => setSelected(null)} />;
+    return <PartyProfile c={c} party={selected} kind={kind} onBack={() => setSelected(null)} canEdit={canEdit} />;
   }
 
   const filtered = data.filter(p => {
@@ -519,12 +570,18 @@ function PartyListModule({ c, kind, data }) {
           <div className="sh-display text-lg font-semibold" style={{ color: c.text }}>{label}s</div>
           <div className="text-xs sh-body mt-0.5" style={{ color: c.textMuted }}>{data.length} total · {data.filter(x => x.status === "Active").length} active</div>
         </div>
-        <button
-          className="flex items-center gap-1.5 text-xs sh-body font-medium px-3 py-2 rounded-lg"
-          style={{ background: c.primary, color: "#fff" }}
-        >
-          <Plus size={14} /> Add {label}
-        </button>
+        {canEdit ? (
+          <button
+            className="flex items-center gap-1.5 text-xs sh-body font-medium px-3 py-2 rounded-lg"
+            style={{ background: c.primary, color: "#fff" }}
+          >
+            <Plus size={14} /> Add {label}
+          </button>
+        ) : (
+          <div className="text-[10.5px] sh-body px-3 py-2 rounded-lg" style={{ background: c.surfaceAlt, color: c.textFaint, border: `1px solid ${c.border}` }}>
+            View only — only Admins can add new {label.toLowerCase()}s
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-2.5">
@@ -736,7 +793,7 @@ function TransactionsModule({ c }) {
               </div>
             </div>
             <div className="col-span-1">
-              <div className="text-[10px] sh-mono mb-1" style={{ color: c.textFaint }}>AMOUNT (RS CR)</div>
+              <div className="text-[10px] sh-mono mb-1" style={{ color: c.textFaint }}>AMOUNT (RS)</div>
               <input
                 type="number"
                 value={form.amount}
@@ -870,8 +927,8 @@ function TransactionsModule({ c }) {
                 </td>
                 <td className="py-2.5 px-4" style={{ color: c.textMuted }}>{t.description}</td>
                 <td className="py-2.5 px-4 sh-mono" style={{ color: c.textFaint }}>{t.reference}</td>
-                <td className="py-2.5 px-4 text-right sh-mono" style={{ color: c.text }}>Rs {t.amount} Cr</td>
-                <td className="py-2.5 px-4 text-right sh-mono font-medium" style={{ color: c.text }}>Rs {t.balance} Cr</td>
+                <td className="py-2.5 px-4 text-right sh-mono" style={{ color: c.text }}>{fmtCr(t.amount)}</td>
+                <td className="py-2.5 px-4 text-right sh-mono font-medium" style={{ color: c.text }}>{fmtCr(t.balance)}</td>
               </tr>
             ))}
           </tbody>
@@ -942,7 +999,7 @@ function LoanDetail({ c, loan, onBack }) {
                 <tr key={i} style={{ borderBottom: i < loan.history.length - 1 ? `1px solid ${c.border}` : "none" }}>
                   <td className="py-2.5 sh-mono" style={{ color: c.textMuted }}>{h.date}</td>
                   <td className="py-2.5" style={{ color: c.text }}>{h.method}</td>
-                  <td className="py-2.5 text-right sh-mono" style={{ color: c.text }}>Rs {h.amount} Cr</td>
+                  <td className="py-2.5 text-right sh-mono" style={{ color: c.text }}>{fmtCr(h.amount)}</td>
                 </tr>
               ))}
             </tbody>
@@ -1014,8 +1071,8 @@ function LoansModule({ c }) {
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs sh-mono">
-                <span style={{ color: c.textMuted }}>Rs {loan.paid} Cr paid</span>
-                <span style={{ color: c.textMuted }}>Rs {loan.remaining} Cr left</span>
+                <span style={{ color: c.textMuted }}>{fmtCr(loan.paid)} paid</span>
+                <span style={{ color: c.textMuted }}>{fmtCr(loan.remaining)} left</span>
               </div>
               <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: c.surfaceAlt }}>
                 <div className="h-full rounded-full" style={{ width: `${pct}%`, background: c[st.tone] }} />
@@ -1391,7 +1448,7 @@ function ReportsModule({ c }) {
       ["Period code", period.toUpperCase()],
       ["Period label", meta.label],
       [],
-      ["SUMMARY (Rs Cr)"],
+      ["SUMMARY (Rs)"],
       ["Metric", "Value"],
       ["Credit (period activity)", periodCredit.toFixed(2)],
       ["Debit (period activity)", periodDebit.toFixed(2)],
@@ -1405,15 +1462,15 @@ function ReportsModule({ c }) {
       ["Active Customers", String(customers.filter(x => x.status === "Active").length)],
       [],
       ["MONTHLY ACTIVITY (period)"],
-      ["Month", "Credit (Rs Cr)", "Debit (Rs Cr)"],
+      ["Month", "Credit (Rs)", "Debit (Rs)"],
       ...periodActivity.map(m => [m.month, String(m.credit), String(m.debit)]),
       [],
       ["TOP RECEIVABLES"],
-      ["Customer", "Outstanding (Rs Cr)"],
+      ["Customer", "Outstanding (Rs)"],
       ...topReceivables.map(r => [r.name, r.amount.toFixed(2)]),
       [],
       ["TOP PAYABLES"],
-      ["Vendor", "Outstanding (Rs Cr)"],
+      ["Vendor", "Outstanding (Rs)"],
       ...topPayables.map(r => [r.name, r.amount.toFixed(2)]),
       [],
       ["LOAN STATUS"],
@@ -1470,7 +1527,7 @@ function ReportsModule({ c }) {
       </div>
       <div className="grid grid-cols-3 gap-4">
         <div className="col-span-2">
-          <SectionCard c={c} title="Top Receivables" subtitle="Outstanding by customer, Rs (Cr)">
+          <SectionCard c={c} title="Top Receivables" subtitle="Outstanding by customer, Rs">
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={topReceivables} layout="vertical" margin={{ left: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={c.border} horizontal={false} />
@@ -1541,22 +1598,444 @@ function ReportsModule({ c }) {
 // ---------------------------------------------------------------------------
 // Settings module
 // ---------------------------------------------------------------------------
-function SettingsModule({ c, theme, setTheme }) {
+// ---------------------------------------------------------------------------
+// Invoices — history module
+// ---------------------------------------------------------------------------
+const invoiceStatusStyle = {
+  Paid: { tone: "success" },
+  Partial: { tone: "accent" },
+  Open: { tone: "primary" },
+  Overdue: { tone: "danger" },
+};
+
+function InvoicesModule({ c }) {
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [selected, setSelected] = useState(null);
+
+  const filtered = invoices.filter(inv => {
+    const q = query.toLowerCase();
+    const matchQ = inv.number.toLowerCase().includes(q) || inv.party.toLowerCase().includes(q) || inv.project.toLowerCase().includes(q);
+    const matchS = statusFilter === "all" || inv.status.toLowerCase() === statusFilter;
+    return matchQ && matchS;
+  });
+
+  if (selected) {
+    const st = invoiceStatusStyle[selected.status] || { tone: "primary" };
+    const balance = +(selected.amount - selected.paid).toFixed(2);
+    return (
+      <div className="flex flex-col gap-5">
+        <button onClick={() => setSelected(null)} className="flex items-center gap-1.5 text-xs sh-body w-fit" style={{ color: c.textMuted }}>
+          <ArrowLeft size={13} /> Back to invoices
+        </button>
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="sh-display text-lg font-semibold" style={{ color: c.text }}>{selected.number}</div>
+              <span className="text-[10px] sh-mono px-2 py-0.5 rounded-full" style={{ background: c[st.tone + "Soft"], color: c[st.tone] }}>{selected.status}</span>
+            </div>
+            <div className="text-xs sh-body mt-0.5" style={{ color: c.textMuted }}>{selected.id} · {selected.type}</div>
+          </div>
+        </div>
+        <div className="grid grid-cols-4 gap-4">
+          <StatCard c={c} icon={User} label="Customer" value={selected.party} accentKey="primary" />
+          <StatCard c={c} icon={Wallet} label="Invoice Amount" value={fmtCr(selected.amount)} accentKey="accent" />
+          <StatCard c={c} icon={CheckCircle2} label="Paid" value={fmtCr(selected.paid)} accentKey="success" />
+          <StatCard c={c} icon={ArrowUpRight} label="Balance Due" value={fmtCr(balance)} accentKey="danger" />
+        </div>
+        <SectionCard c={c} title="Invoice detail">
+          <div className="grid grid-cols-2 gap-3 text-xs sh-body">
+            <div><span style={{ color: c.textFaint }}>Project</span><div style={{ color: c.text }}>{selected.project}</div></div>
+            <div><span style={{ color: c.textFaint }}>Type</span><div style={{ color: c.text }}>{selected.type}</div></div>
+            <div><span style={{ color: c.textFaint }}>Invoice date</span><div className="sh-mono" style={{ color: c.text }}>{selected.date}</div></div>
+            <div><span style={{ color: c.textFaint }}>Due date</span><div className="sh-mono" style={{ color: c.text }}>{selected.dueDate}</div></div>
+          </div>
+        </SectionCard>
+        <SectionCard c={c} title="Payment history">
+          <table className="w-full text-xs sh-body">
+            <thead>
+              <tr style={{ borderBottom: `1px solid ${c.border}` }}>
+                {["Date", "Description", "Amount"].map((h, i) => (
+                  <th key={i} className={`py-2 font-medium ${i === 2 ? "text-right" : "text-left"}`} style={{ color: c.textMuted }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {selected.paid > 0 && (
+                <tr style={{ borderBottom: `1px solid ${c.border}` }}>
+                  <td className="py-2.5 sh-mono" style={{ color: c.textMuted }}>{selected.date}</td>
+                  <td className="py-2.5" style={{ color: c.text }}>Payment received against {selected.number}</td>
+                  <td className="py-2.5 text-right sh-mono" style={{ color: c.success }}>{fmtCr(selected.paid)}</td>
+                </tr>
+              )}
+              {balance > 0 && (
+                <tr>
+                  <td className="py-2.5 sh-mono" style={{ color: c.textMuted }}>—</td>
+                  <td className="py-2.5" style={{ color: c.textMuted }}>Outstanding balance</td>
+                  <td className="py-2.5 text-right sh-mono font-medium" style={{ color: c.danger }}>{fmtCr(balance)}</td>
+                </tr>
+              )}
+              {selected.paid === 0 && balance === selected.amount && (
+                <tr><td colSpan={3} className="py-6 text-center" style={{ color: c.textMuted }}>No payments recorded yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </SectionCard>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="sh-display text-lg font-semibold" style={{ color: c.text }}>Invoice History</div>
+          <div className="text-xs sh-body mt-0.5" style={{ color: c.textMuted }}>{invoices.length} invoices · Progress & final billings</div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg flex-1 max-w-sm" style={{ background: c.surface, border: `1px solid ${c.border}` }}>
+          <Search size={13} style={{ color: c.textFaint }} />
+          <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search invoice no., customer, project…" className="bg-transparent outline-none text-xs flex-1 sh-body" style={{ color: c.text }} />
+        </div>
+        <div className="flex items-center gap-1.5">
+          {["all", "open", "partial", "paid"].map(f => (
+            <button key={f} onClick={() => setStatusFilter(f)} className="text-xs sh-body px-2.5 py-1.5 rounded-lg capitalize"
+              style={{ background: statusFilter === f ? c.primarySoft : "transparent", color: statusFilter === f ? c.primary : c.textMuted, border: `1px solid ${statusFilter === f ? c.primarySoft : c.border}` }}>{f}</button>
+          ))}
+        </div>
+      </div>
+      <div className="rounded-xl overflow-hidden" style={{ background: c.surface, border: `1px solid ${c.border}` }}>
+        <table className="w-full text-xs sh-body">
+          <thead>
+            <tr style={{ background: c.surfaceAlt, borderBottom: `1px solid ${c.border}` }}>
+              {["Invoice", "Customer", "Date", "Amount", "Paid", "Balance", "Status", ""].map((h, i) => (
+                <th key={i} className={`py-2.5 px-4 font-medium ${i >= 3 && i <= 5 ? "text-right" : "text-left"}`} style={{ color: c.textMuted }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((inv, i) => {
+              const st = invoiceStatusStyle[inv.status] || { tone: "primary" };
+              const bal = +(inv.amount - inv.paid).toFixed(2);
+              return (
+                <tr key={inv.id} onClick={() => setSelected(inv)} className="cursor-pointer" style={{ borderBottom: i < filtered.length - 1 ? `1px solid ${c.border}` : "none" }}>
+                  <td className="py-3 px-4">
+                    <div className="sh-mono font-medium" style={{ color: c.text }}>{inv.number}</div>
+                    <div className="text-[10.5px] mt-0.5" style={{ color: c.textFaint }}>{inv.type}</div>
+                  </td>
+                  <td className="py-3 px-4" style={{ color: c.text }}>{inv.party}</td>
+                  <td className="py-3 px-4 sh-mono" style={{ color: c.textMuted }}>{inv.date}</td>
+                  <td className="py-3 px-4 text-right sh-mono" style={{ color: c.text }}>{fmtCr(inv.amount)}</td>
+                  <td className="py-3 px-4 text-right sh-mono" style={{ color: c.success }}>{fmtCr(inv.paid)}</td>
+                  <td className="py-3 px-4 text-right sh-mono" style={{ color: bal > 0 ? c.danger : c.text }}>{fmtCr(bal)}</td>
+                  <td className="py-3 px-4"><span className="text-[10px] sh-mono px-2 py-0.5 rounded-full" style={{ background: c[st.tone + "Soft"], color: c[st.tone] }}>{inv.status}</span></td>
+                  <td className="py-3 px-4 text-right"><ChevronRight size={14} style={{ color: c.textFaint }} /></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Ledgers — Customer ledger + General ledger
+// ---------------------------------------------------------------------------
+function LedgersModule({ c }) {
+  const [tab, setTab] = useState("customer");
+  const [partyId, setPartyId] = useState(customers[0]?.id || "");
+  const party = customers.find(p => p.id === partyId) || customers[0];
+
+  const { rows: custTxns } = useMemo(
+    () => (party ? buildTransactions(party) : { rows: [], creditTotal: 0 }),
+    [party]
+  );
+
+  // Build simplified GL lines from seed
+  const acct = useMemo(() => Object.fromEntries(chartOfAccounts.map(a => [a.code, a.name])), []);
+  const glLines = useMemo(() => {
+    const lines = [];
+    customers.forEach(p => {
+      const credit = p.paidTotal + p.outstanding;
+      lines.push({ date: "2026-08-01", account: "1200", name: acct["1200"], party: p.name, debit: credit, credit: 0, narr: `AR — ${p.project}` });
+      lines.push({ date: "2026-08-01", account: "4100", name: acct["4100"], party: p.name, debit: 0, credit: credit, narr: `Revenue — ${p.project}` });
+      if (p.paidTotal > 0) {
+        lines.push({ date: "2026-08-01", account: "1100", name: acct["1100"], party: p.name, debit: p.paidTotal, credit: 0, narr: `Collection — ${p.name}` });
+        lines.push({ date: "2026-08-01", account: "1200", name: acct["1200"], party: p.name, debit: 0, credit: p.paidTotal, narr: `AR cleared — ${p.name}` });
+      }
+    });
+    vendors.forEach(p => {
+      const cost = p.paidTotal + p.outstanding;
+      lines.push({ date: "2026-08-01", account: "5100", name: acct["5100"], party: p.name, debit: cost, credit: 0, narr: `Supply — ${p.project}` });
+      lines.push({ date: "2026-08-01", account: "2100", name: acct["2100"], party: p.name, debit: 0, credit: cost, narr: `AP — ${p.name}` });
+      if (p.paidTotal > 0) {
+        lines.push({ date: "2026-08-01", account: "2100", name: acct["2100"], party: p.name, debit: p.paidTotal, credit: 0, narr: `Paid — ${p.name}` });
+        lines.push({ date: "2026-08-01", account: "1100", name: acct["1100"], party: p.name, debit: 0, credit: p.paidTotal, narr: `Bank — ${p.name}` });
+      }
+    });
+    const assetTotal = assets.reduce((s, a) => s + a.value, 0);
+    lines.push({ date: "2026-01-01", account: "1500", name: acct["1500"], party: "—", debit: assetTotal, credit: 0, narr: "Equipment book value" });
+    lines.push({ date: "2026-01-01", account: "3100", name: acct["3100"], party: "—", debit: 0, credit: assetTotal, narr: "Capitalisation of plant" });
+    return lines;
+  }, [acct]);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="sh-display text-lg font-semibold" style={{ color: c.text }}>Ledgers</div>
+          <div className="text-xs sh-body mt-0.5" style={{ color: c.textMuted }}>Customer subsidiary ledger · General ledger</div>
+        </div>
+        <div className="flex gap-1.5">
+          {[
+            { key: "customer", label: "Customer ledger" },
+            { key: "general", label: "General ledger" },
+          ].map(t => (
+            <button key={t.key} onClick={() => setTab(t.key)} className="text-xs sh-body px-3 py-1.5 rounded-lg"
+              style={{ background: tab === t.key ? c.primary : c.surface, color: tab === t.key ? "#fff" : c.textMuted, border: `1px solid ${tab === t.key ? c.primary : c.border}` }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {tab === "customer" && party && (
+        <>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] sh-mono" style={{ color: c.textFaint }}>CUSTOMER</span>
+            <select value={partyId} onChange={e => setPartyId(e.target.value)}
+              className="text-xs sh-body px-2.5 py-2 rounded-lg outline-none max-w-md"
+              style={{ background: c.surface, border: `1px solid ${c.border}`, color: c.text }}>
+              {customers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+          <div className="grid grid-cols-4 gap-4">
+            <StatCard c={c} icon={TrendingUp} label="Total billed" value={fmtCr(party.paidTotal + party.outstanding)} accentKey="success" />
+            <StatCard c={c} icon={Wallet} label="Collected" value={fmtCr(party.paidTotal)} accentKey="primary" />
+            <StatCard c={c} icon={ArrowUpRight} label="Outstanding" value={fmtCr(party.outstanding)} accentKey="accent" />
+            <StatCard c={c} icon={Landmark} label="Active loans" value={party.activeLoans} accentKey="danger" />
+          </div>
+          <SectionCard c={c} title={`Customer ledger — ${party.name}`} subtitle="Running balance (credit increases receivable)">
+            <table className="w-full text-xs sh-body">
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${c.border}` }}>
+                  {["Date", "Particulars", "Debit", "Credit", "Balance"].map((h, i) => (
+                    <th key={i} className={`py-2 font-medium ${i >= 2 ? "text-right" : "text-left"}`} style={{ color: c.textMuted }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {custTxns.map((t, i) => (
+                  <tr key={i} style={{ borderBottom: i < custTxns.length - 1 ? `1px solid ${c.border}` : "none" }}>
+                    <td className="py-2.5 sh-mono" style={{ color: c.textMuted }}>{t.date}</td>
+                    <td className="py-2.5" style={{ color: c.text }}>{t.description}</td>
+                    <td className="py-2.5 text-right sh-mono" style={{ color: c.text }}>{t.type === "credit" ? fmtCr(t.amount) : "—"}</td>
+                    <td className="py-2.5 text-right sh-mono" style={{ color: c.text }}>{t.type === "debit" ? fmtCr(t.amount) : "—"}</td>
+                    <td className="py-2.5 text-right sh-mono font-medium" style={{ color: c.text }}>{fmtCr(t.balance)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </SectionCard>
+        </>
+      )}
+
+      {tab === "general" && (
+        <SectionCard c={c} title="General ledger" subtitle="Combined postings from receivables, payables, revenue & costs">
+          <div className="overflow-auto max-h-[520px]">
+            <table className="w-full text-xs sh-body">
+              <thead>
+                <tr style={{ background: c.surfaceAlt, borderBottom: `1px solid ${c.border}` }}>
+                  {["Date", "Code", "Account", "Party", "Narration", "Debit", "Credit"].map((h, i) => (
+                    <th key={i} className={`py-2.5 px-3 font-medium ${i >= 5 ? "text-right" : "text-left"}`} style={{ color: c.textMuted }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {glLines.map((g, i) => (
+                  <tr key={i} style={{ borderBottom: i < glLines.length - 1 ? `1px solid ${c.border}` : "none" }}>
+                    <td className="py-2 px-3 sh-mono" style={{ color: c.textMuted }}>{g.date}</td>
+                    <td className="py-2 px-3 sh-mono" style={{ color: c.text }}>{g.account}</td>
+                    <td className="py-2 px-3" style={{ color: c.text }}>{g.name}</td>
+                    <td className="py-2 px-3" style={{ color: c.textMuted }}>{g.party}</td>
+                    <td className="py-2 px-3" style={{ color: c.textMuted }}>{g.narr}</td>
+                    <td className="py-2 px-3 text-right sh-mono" style={{ color: c.text }}>{g.debit ? fmtCr(g.debit) : "—"}</td>
+                    <td className="py-2 px-3 text-right sh-mono" style={{ color: c.text }}>{g.credit ? fmtCr(g.credit) : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </SectionCard>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Trial Balance
+// ---------------------------------------------------------------------------
+function TrialBalanceModule({ c }) {
+  const acct = useMemo(() => Object.fromEntries(chartOfAccounts.map(a => [a.code, a.name])), []);
+  const rows = useMemo(() => {
+    const ar = customers.reduce((s, p) => s + p.outstanding, 0);
+    const ap = vendors.reduce((s, p) => s + p.outstanding, 0);
+    const collections = customers.reduce((s, p) => s + p.paidTotal, 0);
+    const payments = vendors.reduce((s, p) => s + p.paidTotal, 0);
+    const revenue = customers.reduce((s, p) => s + p.paidTotal + p.outstanding, 0);
+    const materials = vendors.reduce((s, p) => s + p.paidTotal + p.outstanding, 0);
+    const plant = assets.reduce((s, a) => s + a.value, 0);
+    const cash = Math.max(0, collections - payments);
+    const loansRem = loans.reduce((s, l) => s + l.remaining, 0);
+
+    const list = [
+      { code: "1100", name: acct["1100"], debit: cash, credit: 0 },
+      { code: "1200", name: acct["1200"], debit: ar, credit: 0 },
+      { code: "1500", name: acct["1500"], debit: plant, credit: 0 },
+      { code: "2100", name: acct["2100"], debit: 0, credit: ap },
+      { code: "2200", name: acct["2200"], debit: 0, credit: loansRem },
+      { code: "3100", name: acct["3100"], debit: 0, credit: plant },
+      { code: "4100", name: acct["4100"], debit: 0, credit: revenue },
+      { code: "5100", name: acct["5100"], debit: materials, credit: 0 },
+    ];
+    // Balancing figure for demo presentation
+    const td = list.reduce((s, r) => s + r.debit, 0);
+    const tc = list.reduce((s, r) => s + r.credit, 0);
+    const diff = +(td - tc).toFixed(2);
+    if (diff > 0) list.push({ code: "3999", name: "Suspense / Balancing (demo)", debit: 0, credit: diff });
+    else if (diff < 0) list.push({ code: "3999", name: "Suspense / Balancing (demo)", debit: -diff, credit: 0 });
+    return list;
+  }, []);
+
+  const totalDebit = rows.reduce((s, r) => s + r.debit, 0);
+  const totalCredit = rows.reduce((s, r) => s + r.credit, 0);
+
+  function downloadTB() {
+    const lines = [
+      ["Stronghold Pakistan — Trial Balance"],
+      ["As at", "8 August 2026"],
+      [],
+      ["Code", "Account", "Debit", "Credit"],
+      ...rows.map(r => [r.code, r.name, r.debit.toFixed(2), r.credit.toFixed(2)]),
+      ["", "TOTAL", totalDebit.toFixed(2), totalCredit.toFixed(2)],
+    ];
+    const csv = lines.map(r => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "stronghold-trial-balance-2026-08-08.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="sh-display text-lg font-semibold" style={{ color: c.text }}>Trial Balance</div>
+          <div className="text-xs sh-body mt-0.5" style={{ color: c.textMuted }}>As at 8 August 2026 · Derived from demo ledgers</div>
+        </div>
+        <button onClick={downloadTB} className="flex items-center gap-1.5 text-xs sh-body font-medium px-3 py-2 rounded-lg" style={{ background: c.primary, color: "#fff" }}>
+          <Download size={14} /> Download CSV
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <StatCard c={c} icon={TrendingUp} label="Total Debit" value={fmtCr(totalDebit)} accentKey="primary" />
+        <StatCard c={c} icon={TrendingDown} label="Total Credit" value={fmtCr(totalCredit)} accentKey="accent" />
+      </div>
+      <div className="rounded-xl overflow-hidden" style={{ background: c.surface, border: `1px solid ${c.border}` }}>
+        <table className="w-full text-xs sh-body">
+          <thead>
+            <tr style={{ background: c.surfaceAlt, borderBottom: `1px solid ${c.border}` }}>
+              {["Code", "Account", "Debit", "Credit"].map((h, i) => (
+                <th key={i} className={`py-2.5 px-4 font-medium ${i >= 2 ? "text-right" : "text-left"}`} style={{ color: c.textMuted }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={r.code} style={{ borderBottom: `1px solid ${c.border}` }}>
+                <td className="py-2.5 px-4 sh-mono" style={{ color: c.textMuted }}>{r.code}</td>
+                <td className="py-2.5 px-4" style={{ color: c.text }}>{r.name}</td>
+                <td className="py-2.5 px-4 text-right sh-mono" style={{ color: c.text }}>{r.debit ? fmtCr(r.debit) : "—"}</td>
+                <td className="py-2.5 px-4 text-right sh-mono" style={{ color: c.text }}>{r.credit ? fmtCr(r.credit) : "—"}</td>
+              </tr>
+            ))}
+            <tr style={{ background: c.primarySoft }}>
+              <td className="py-3 px-4" colSpan={2}><span className="font-semibold" style={{ color: c.primary }}>TOTAL</span></td>
+              <td className="py-3 px-4 text-right sh-mono font-semibold" style={{ color: c.primary }}>{fmtCr(totalDebit)}</td>
+              <td className="py-3 px-4 text-right sh-mono font-semibold" style={{ color: c.primary }}>{fmtCr(totalCredit)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div className="text-[10.5px] sh-mono" style={{ color: c.textFaint }}>
+        Demo trial balance is illustrative. Debits and credits are forced to balance with a suspense line when needed.
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Admin portal
+// ---------------------------------------------------------------------------
+function AdminModule({ c, theme, setTheme }) {
+  const [users] = useState([
+    { id: 1, name: "S. Raza", title: "Director", access: "Admin", email: "admin@strongholdpk.com", status: "Active" },
+    { id: 2, name: "A. Khan", title: "Site Accounts", access: "Employee", email: "employee@strongholdpk.com", status: "Active" },
+    { id: 3, name: "M. Ali", title: "Projects", access: "Employee", email: "projects@strongholdpk.com", status: "Active" },
+  ]);
   const [company, setCompany] = useState({
     name: "Stronghold Pakistan",
     tagline: "Post-Tensioning Specialists since 1985",
     city: "Karachi",
     phone: "+92 21 3456 7890",
     email: "info@strongholdpk.com",
-    currency: "PKR (Crore)",
+    currency: "PKR",
     fiscalYear: "July – June",
   });
+
   return (
-    <div className="flex flex-col gap-5 max-w-3xl">
+    <div className="flex flex-col gap-5 max-w-4xl">
       <div>
-        <div className="sh-display text-lg font-semibold" style={{ color: c.text }}>Settings</div>
-        <div className="text-xs sh-body mt-0.5" style={{ color: c.textMuted }}>Company profile and demo preferences</div>
+        <div className="sh-display text-lg font-semibold" style={{ color: c.text }}>Admin Portal</div>
+        <div className="text-xs sh-body mt-0.5" style={{ color: c.textMuted }}>Users, company profile, system preferences</div>
       </div>
+
+      <SectionCard c={c} title="Users & access levels" right={<span className="text-[10.5px] sh-body" style={{ color: c.textMuted }}>Demo login: admin/stronghold · employee/stronghold</span>}>
+        <table className="w-full text-xs sh-body">
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${c.border}` }}>
+              {["Name", "Title", "Access Level", "Email", "Status"].map((h, i) => (
+                <th key={i} className="py-2 font-medium text-left" style={{ color: c.textMuted }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((u, i) => (
+              <tr key={u.id} style={{ borderBottom: i < users.length - 1 ? `1px solid ${c.border}` : "none" }}>
+                <td className="py-2.5" style={{ color: c.text }}>{u.name}</td>
+                <td className="py-2.5" style={{ color: c.textMuted }}>{u.title}</td>
+                <td className="py-2.5">
+                  <span className="text-[10px] sh-mono px-2 py-0.5 rounded-full" style={{ background: u.access === "Admin" ? c.accentSoft : c.primarySoft, color: u.access === "Admin" ? c.accent : c.primary }}>{u.access}</span>
+                </td>
+                <td className="py-2.5 sh-mono" style={{ color: c.textMuted }}>{u.email}</td>
+                <td className="py-2.5">
+                  <span className="text-[10px] sh-mono px-2 py-0.5 rounded-full" style={{ background: c.successSoft, color: c.success }}>{u.status}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="text-[10.5px] sh-body mt-3" style={{ color: c.textFaint }}>
+          Admins see Ledgers, Trial Balance, Reports, and this Admin panel. Employees see day-to-day operational modules only — Customers, Vendors, Transactions, Invoices, Loans, Assets, Spreadsheet, and Documents.
+        </div>
+      </SectionCard>
+
       <SectionCard c={c} title="Appearance">
         <div className="flex items-center justify-between">
           <div>
@@ -1567,13 +2046,14 @@ function SettingsModule({ c, theme, setTheme }) {
             {["light", "dark"].map(t => (
               <button key={t} onClick={() => setTheme(t)} className="text-xs sh-body px-3 py-1.5 rounded-lg capitalize"
                 style={{ background: theme === t ? c.primary : c.surfaceAlt, color: theme === t ? "#fff" : c.textMuted, border: `1px solid ${theme === t ? c.primary : c.border}` }}>
-                {t === "light" ? "Light" : "Dark"}
+                {t}
               </button>
             ))}
           </div>
         </div>
       </SectionCard>
-      <SectionCard c={c} title="Company Profile">
+
+      <SectionCard c={c} title="Company profile">
         <div className="grid grid-cols-2 gap-3">
           {[
             { key: "name", label: "Company name" },
@@ -1581,7 +2061,7 @@ function SettingsModule({ c, theme, setTheme }) {
             { key: "city", label: "City" },
             { key: "phone", label: "Phone" },
             { key: "email", label: "Email" },
-            { key: "currency", label: "Display currency" },
+            { key: "currency", label: "Currency" },
             { key: "fiscalYear", label: "Fiscal year" },
           ].map(field => (
             <div key={field.key} className={field.key === "tagline" ? "col-span-2" : ""}>
@@ -1596,12 +2076,90 @@ function SettingsModule({ c, theme, setTheme }) {
           <button className="text-xs sh-body font-medium px-3 py-2 rounded-lg" style={{ background: c.primary, color: "#fff" }}>Save changes</button>
         </div>
       </SectionCard>
-      <SectionCard c={c} title="Demo Build" subtitle="Stronghold Business Suite">
-        <div className="text-xs sh-body" style={{ color: c.textMuted }}>
-          All 10 modules implemented · Seeded with Stronghold Pakistan project data
-          <div className="sh-mono text-[10.5px] mt-1" style={{ color: c.textFaint }}>Frontend demo complete · Ready for Flask + Supabase wiring</div>
+
+      <SectionCard c={c} title="System" subtitle="Demo environment">
+        <div className="text-xs sh-body space-y-1" style={{ color: c.textMuted }}>
+          <div>Modules: Dashboard, Parties, Transactions, Invoices, Loans, Ledgers, Trial Balance, Assets, Documents, Reports, Admin</div>
+          <div className="sh-mono text-[10.5px]" style={{ color: c.textFaint }}>Local / LAN deployment recommended for production · Amounts shown in Rs Cr</div>
         </div>
       </SectionCard>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Employee dashboard — operational view, no company-wide financial exposure
+// ---------------------------------------------------------------------------
+function EmployeeDashboard({ c, currentUser, goTo }) {
+  const activeCustomers = customers.filter(x => x.status === "Active").length;
+  const activeVendors = vendors.filter(x => x.status === "Active").length;
+  const overdueLoans = loans.filter(l => l.status === "Overdue").length;
+  const draftDocs = documents.filter(d => d.status === "Draft" || d.status === "Under Review").length;
+  const inMaintenance = assets.filter(a => a.status === "Maintenance").length;
+  const openInvoices = invoices.filter(i => i.status !== "Paid").length;
+
+  const quickLinks = [
+    { key: "customers", label: "Customers", icon: Users },
+    { key: "vendors", label: "Vendors", icon: Truck },
+    { key: "transactions", label: "Transactions", icon: ArrowLeftRight },
+    { key: "documents", label: "Documents", icon: FileText },
+    { key: "assets", label: "Assets", icon: Boxes },
+    { key: "spreadsheet", label: "Spreadsheet", icon: Table2 },
+  ];
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div>
+        <div className="sh-display text-lg font-semibold" style={{ color: c.text }}>Welcome back, {currentUser.name}</div>
+        <div className="text-xs sh-body mt-0.5" style={{ color: c.textMuted }}>{currentUser.title} · Operational overview · 8 August 2026</div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <StatCard c={c} icon={Users} label="Active Customers" value={activeCustomers} accentKey="primary" />
+        <StatCard c={c} icon={Truck} label="Active Vendors" value={activeVendors} accentKey="primary" />
+        <StatCard c={c} icon={AlertTriangle} label="Overdue Loans" value={overdueLoans} accentKey="danger" />
+        <StatCard c={c} icon={ClipboardList} label="Docs Needing Action" value={draftDocs} accentKey="accent" />
+        <StatCard c={c} icon={Hourglass} label="Assets in Maintenance" value={inMaintenance} accentKey="accent" />
+        <StatCard c={c} icon={ReceiptText} label="Open Invoices" value={openInvoices} accentKey="success" />
+      </div>
+
+      <SectionCard c={c} title="Quick Links" subtitle="Jump into your day-to-day modules">
+        <div className="grid grid-cols-3 gap-3">
+          {quickLinks.map(q => (
+            <button
+              key={q.key}
+              onClick={() => goTo(q.key)}
+              className="flex items-center gap-2.5 px-3 py-3 rounded-lg text-left"
+              style={{ background: c.surfaceAlt, border: `1px solid ${c.border}` }}
+            >
+              <q.icon size={16} style={{ color: c.primary }} />
+              <span className="text-xs sh-body font-medium" style={{ color: c.text }}>{q.label}</span>
+              <ChevronRight size={14} className="ml-auto" style={{ color: c.textFaint }} />
+            </button>
+          ))}
+        </div>
+      </SectionCard>
+
+      <SectionCard c={c} title="Recent Activity" subtitle="Latest events across the business">
+        <div className="flex flex-col gap-3.5">
+          {recentActivity.map((a, i) => {
+            const tone = { credit: c.primary, debit: c.accent, success: c.success, vendor: c.textMuted }[a.type];
+            return (
+              <div key={i} className="flex items-start gap-2.5">
+                <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: tone }} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs sh-body leading-snug" style={{ color: c.text }}>{a.text}</div>
+                  <div className="text-[10.5px] sh-mono mt-0.5" style={{ color: c.textFaint }}>{a.time}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </SectionCard>
+
+      <div className="text-[10.5px] sh-mono text-center" style={{ color: c.textFaint }}>
+        Company-wide financial totals, ledgers, and reports are visible to Admin accounts only.
+      </div>
     </div>
   );
 }
@@ -1612,13 +2170,152 @@ function SettingsModule({ c, theme, setTheme }) {
 export default function StrongholdDemo() {
   const [theme, setTheme] = useState("light");
   const [active, setActive] = useState("dashboard");
+  const [currentUser, setCurrentUser] = useState(null);
+  const [portal, setPortal] = useState(null); // null | "Admin" | "Employee"
+  const [loginForm, setLoginForm] = useState({ user: "", pass: "" });
+  const [loginErr, setLoginErr] = useState("");
   const c = palette[theme];
 
   const pieColors = useMemo(() => ({
     primary: c.primary, success: c.success, danger: c.danger, accent: c.accent,
   }), [c]);
 
-  const activeNav = NAV.find(n => n.key === active);
+  const role = currentUser?.role || "Employee";
+  const visibleNav = NAV.filter(n => n.roles.includes(role));
+  const activeNav = NAV.find(n => n.key === active) || NAV[0];
+
+  function choosePortal(p) {
+    const defaultUser = DEMO_USERS.find(u => u.role === p);
+    setPortal(p);
+    setLoginForm({ user: defaultUser?.user || "", pass: "" });
+    setLoginErr("");
+  }
+
+  function handleLogin(e) {
+    e?.preventDefault?.();
+    const match = DEMO_USERS.find(
+      u => u.role === portal && u.user === loginForm.user.trim().toLowerCase() && loginForm.pass === u.pass
+    );
+    if (match) {
+      setCurrentUser(match);
+      setActive("dashboard");
+      setLoginErr("");
+    } else {
+      setLoginErr(`Incorrect ${portal} credentials for this demo.`);
+    }
+  }
+
+  function handleSignOut() {
+    setCurrentUser(null);
+    setPortal(null);
+    setActive("dashboard");
+  }
+
+  if (!currentUser) {
+    // Step 1 — choose which portal to sign into
+    if (!portal) {
+      return (
+        <div className="sh-body w-full h-screen flex items-center justify-center" style={{ background: c.bg, color: c.text }}>
+          {fonts}
+          <div className="w-full max-w-lg mx-4 flex flex-col gap-6">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: c.accent }}>
+                <Building2 size={20} color={c.sidebarBg} />
+              </div>
+              <div>
+                <div className="sh-display text-lg font-semibold" style={{ color: c.text }}>Stronghold Business Suite</div>
+                <div className="text-xs sh-body mt-1" style={{ color: c.textMuted }}>Choose which portal you're signing into</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => choosePortal("Admin")}
+                className="flex flex-col items-start gap-3 p-5 rounded-2xl text-left"
+                style={{ background: c.surface, border: `1px solid ${c.border}`, boxShadow: "0 8px 30px rgba(0,0,0,0.06)" }}
+              >
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: c.accentSoft }}>
+                  <Shield size={18} style={{ color: c.accent }} />
+                </div>
+                <div>
+                  <div className="text-sm sh-display font-semibold" style={{ color: c.text }}>Admin Portal</div>
+                  <div className="text-[11px] sh-body mt-1 leading-snug" style={{ color: c.textMuted }}>
+                    Full financial visibility, accounting books, reports, and user administration.
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => choosePortal("Employee")}
+                className="flex flex-col items-start gap-3 p-5 rounded-2xl text-left"
+                style={{ background: c.surface, border: `1px solid ${c.border}`, boxShadow: "0 8px 30px rgba(0,0,0,0.06)" }}
+              >
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: c.primarySoft }}>
+                  <User size={18} style={{ color: c.primary }} />
+                </div>
+                <div>
+                  <div className="text-sm sh-display font-semibold" style={{ color: c.text }}>Employee Portal</div>
+                  <div className="text-[11px] sh-body mt-1 leading-snug" style={{ color: c.textMuted }}>
+                    Day-to-day operations — parties, transactions, documents, and assets.
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 2 — dedicated sign-in form for the chosen portal
+    const portalIsAdmin = portal === "Admin";
+    return (
+      <div className="sh-body w-full h-screen flex items-center justify-center" style={{ background: c.bg, color: c.text }}>
+        {fonts}
+        <div className="w-full max-w-md mx-4 rounded-2xl p-8 flex flex-col gap-6" style={{ background: c.surface, border: `1px solid ${c.border}`, boxShadow: "0 12px 40px rgba(0,0,0,0.08)" }}>
+          <button
+            onClick={() => setPortal(null)}
+            className="flex items-center gap-1.5 text-xs sh-body w-fit"
+            style={{ color: c.textMuted }}
+          >
+            <ArrowLeft size={13} /> Choose a different portal
+          </button>
+
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: portalIsAdmin ? c.accentSoft : c.primarySoft }}>
+              {portalIsAdmin ? <Shield size={20} style={{ color: c.accent }} /> : <User size={20} style={{ color: c.primary }} />}
+            </div>
+            <div>
+              <div className="sh-display text-lg font-semibold" style={{ color: c.text }}>{portal} Sign In</div>
+              <div className="text-[10px] sh-mono tracking-wide" style={{ color: c.textFaint }}>STRONGHOLD BUSINESS SUITE</div>
+            </div>
+          </div>
+
+          <form onSubmit={handleLogin} className="flex flex-col gap-3">
+            <div>
+              <div className="text-[10px] sh-mono mb-1" style={{ color: c.textFaint }}>USERNAME</div>
+              <input value={loginForm.user} onChange={e => setLoginForm({ ...loginForm, user: e.target.value })}
+                className="w-full text-xs sh-body px-3 py-2.5 rounded-lg outline-none"
+                style={{ background: c.surfaceAlt, border: `1px solid ${c.border}`, color: c.text }} />
+            </div>
+            <div>
+              <div className="text-[10px] sh-mono mb-1" style={{ color: c.textFaint }}>PASSWORD</div>
+              <input type="password" value={loginForm.pass} onChange={e => setLoginForm({ ...loginForm, pass: e.target.value })}
+                placeholder="••••••••"
+                className="w-full text-xs sh-body px-3 py-2.5 rounded-lg outline-none"
+                style={{ background: c.surfaceAlt, border: `1px solid ${c.border}`, color: c.text }} />
+            </div>
+            {loginErr && <div className="text-[11px] sh-body" style={{ color: c.danger }}>{loginErr}</div>}
+            <button type="submit" className="w-full text-xs sh-body font-medium py-2.5 rounded-lg mt-1" style={{ background: portalIsAdmin ? c.accent : c.primary, color: "#fff" }}>
+              Sign in to {portal} Portal
+            </button>
+          </form>
+          <div className="text-[10.5px] sh-mono text-center" style={{ color: c.textFaint }}>
+            Demo password for this portal: stronghold
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -1642,37 +2339,59 @@ export default function StrongholdDemo() {
           </div>
         </div>
 
-        <nav className="flex-1 px-3 flex flex-col gap-0.5">
-          {NAV.map(item => {
-            const isActive = item.key === active;
-            const Icon = item.icon;
+        <nav className="flex-1 px-3 flex flex-col gap-3 overflow-y-auto">
+          {NAV_SECTIONS.map(section => {
+            const items = visibleNav.filter(n => n.section === section);
+            if (items.length === 0) return null;
             return (
-              <button
-                key={item.key}
-                onClick={() => setActive(item.key)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors"
-                style={{
-                  background: isActive ? c.sidebarActiveBg : "transparent",
-                  color: isActive ? c.sidebarTextActive : c.sidebarText,
-                }}
-              >
-                <Icon size={15} />
-                <span className="flex-1 text-left">{item.label}</span>
-                {item.phase > 1 && (
-                  <span
-                    className="text-[9px] sh-mono px-1.5 py-0.5 rounded"
-                    style={{ background: "rgba(255,255,255,0.06)", color: c.sidebarText }}
-                  >
-                    P{item.phase}
-                  </span>
-                )}
-              </button>
+              <div key={section} className="flex flex-col gap-0.5">
+                <div className="px-3 pb-1 text-[9.5px] sh-mono tracking-wide" style={{ color: c.textFaint }}>
+                  {section.toUpperCase()}
+                </div>
+                {items.map(item => {
+                  const isActive = item.key === active;
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.key}
+                      onClick={() => setActive(item.key)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors"
+                      style={{
+                        background: isActive ? c.sidebarActiveBg : "transparent",
+                        color: isActive ? c.sidebarTextActive : c.sidebarText,
+                      }}
+                    >
+                      <Icon size={15} />
+                      <span className="flex-1 text-left">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             );
           })}
         </nav>
 
-        <div className="px-5 pt-4 mt-2" style={{ borderTop: `1px solid rgba(255,255,255,0.06)` }}>
-          <div className="text-[10px] sh-mono" style={{ color: c.sidebarText }}>DEMO BUILD — COMPLETE</div>
+        <div className="px-3 pt-3 mt-2 flex flex-col gap-2" style={{ borderTop: `1px solid rgba(255,255,255,0.06)` }}>
+          <div className="flex items-center gap-2.5 px-2">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-xs sh-mono font-semibold shrink-0"
+              style={{ background: c.primary, color: "#fff" }}
+            >
+              {currentUser.name.split(" ").map(p => p[0]).join("").slice(0, 2)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-xs sh-body font-medium truncate" style={{ color: "#fff" }}>{currentUser.name}</div>
+              <div className="text-[10px] sh-mono" style={{ color: c.sidebarText }}>{currentUser.role} · {currentUser.title}</div>
+            </div>
+            <button
+              title="Sign out"
+              onClick={handleSignOut}
+              className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+              style={{ background: "rgba(255,255,255,0.06)" }}
+            >
+              <LogOut size={13} style={{ color: c.sidebarText }} />
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -1715,21 +2434,34 @@ export default function StrongholdDemo() {
             >
               {theme === "light" ? <Moon size={14} style={{ color: c.textMuted }} /> : <Sun size={14} style={{ color: c.textMuted }} />}
             </button>
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-xs sh-mono font-semibold"
-              style={{ background: c.primary, color: "#fff" }}
+            <span
+              className="text-[10px] sh-mono px-2.5 py-1.5 rounded-lg"
+              style={{ background: role === "Admin" ? c.accentSoft : c.primarySoft, color: role === "Admin" ? c.accent : c.primary }}
             >
-              SR
-            </div>
+              {role.toUpperCase()}
+            </span>
           </div>
         </header>
 
         {/* Body */}
         <main className="flex-1 overflow-auto p-6" style={{ background: c.bg }}>
-          {active === "customers" ? (
-            <PartyListModule c={c} kind="customer" data={customers} />
+          {!activeNav.roles.includes(role) ? (
+            <div
+              className="rounded-xl p-16 flex flex-col items-center justify-center text-center gap-3"
+              style={{ background: c.surface, border: `1px dashed ${c.border}` }}
+            >
+              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: c.dangerSoft }}>
+                <Shield size={20} style={{ color: c.danger }} />
+              </div>
+              <div className="sh-display font-semibold" style={{ color: c.text }}>Access restricted</div>
+              <div className="text-xs sh-body max-w-sm" style={{ color: c.textMuted }}>
+                {activeNav.label} is only visible to Admin accounts. Sign in as admin to view it.
+              </div>
+            </div>
+          ) : active === "customers" ? (
+            <PartyListModule c={c} kind="customer" data={customers} canEdit={role === "Admin"} />
           ) : active === "vendors" ? (
-            <PartyListModule c={c} kind="vendor" data={vendors} />
+            <PartyListModule c={c} kind="vendor" data={vendors} canEdit={role === "Admin"} />
           ) : active === "transactions" ? (
             <TransactionsModule c={c} />
           ) : active === "loans" ? (
@@ -1740,16 +2472,27 @@ export default function StrongholdDemo() {
             <SpreadsheetModule c={c} />
           ) : active === "documents" ? (
             <DocumentsModule c={c} />
+          ) : active === "invoices" ? (
+            <InvoicesModule c={c} />
+          ) : active === "ledger" ? (
+            <LedgersModule c={c} />
+          ) : active === "trial" ? (
+            <TrialBalanceModule c={c} />
           ) : active === "reports" ? (
             <ReportsModule c={c} />
-          ) : active === "settings" ? (
-            <SettingsModule c={c} theme={theme} setTheme={setTheme} />
+          ) : active === "admin" ? (
+            <AdminModule c={c} theme={theme} setTheme={setTheme} />
+          ) : role !== "Admin" ? (
+            <EmployeeDashboard c={c} currentUser={currentUser} goTo={setActive} />
           ) : (
             <div className="flex flex-col gap-5">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="sh-display text-lg font-semibold" style={{ color: c.text }}>Financial Overview</div>
-                  <div className="text-xs sh-body mt-0.5" style={{ color: c.textMuted }}>As of 8 August 2026</div>
+                  <div className="text-xs sh-body mt-0.5" style={{ color: c.textMuted }}>Stronghold Pakistan · Post-tensioning · As of 8 August 2026</div>
+                </div>
+                <div className="text-[10px] sh-mono px-2.5 py-1 rounded-full" style={{ background: c.accentSoft, color: c.accent }}>
+                  DEMO BUILD
                 </div>
               </div>
 
@@ -1766,7 +2509,7 @@ export default function StrongholdDemo() {
               {/* Charts row */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="col-span-2">
-                  <SectionCard c={c} title="Credit vs Debit" subtitle="Monthly activity, Rs (Cr)">
+                  <SectionCard c={c} title="Credit vs Debit" subtitle="Monthly activity, Rs">
                     <ResponsiveContainer width="100%" height={220}>
                       <AreaChart data={monthlyActivity}>
                         <defs>
@@ -1824,7 +2567,7 @@ export default function StrongholdDemo() {
               {/* Bottom row */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="col-span-2">
-                  <SectionCard c={c} title="Outstanding Balances" subtitle="Top receivables by customer, Rs (Cr)">
+                  <SectionCard c={c} title="Outstanding Balances" subtitle="Top receivables by customer, Rs">
                     <ResponsiveContainer width="100%" height={200}>
                       <BarChart data={topOutstanding} layout="vertical" margin={{ left: 8 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={c.border} horizontal={false} />
